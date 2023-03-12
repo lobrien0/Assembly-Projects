@@ -1,0 +1,61 @@
+#########################################################################
+#   Program Info:                                                       #
+#                                                                       #
+#       Author:     Luke O'Brien                                        #
+#       Updated:    3/11/2023                                           #
+#                                                                       #
+#       Description:                                                    #
+#           The following program is designed sum the data inside a     #
+#           linked list to a single number, then retunred in %rdi       #
+#                                                                       #
+#########################################################################
+
+.pos 0
+irmovq stack, %rsp          # Sets %rsp to stack location
+call main
+halt
+
+main:
+    irmovq ele1, %rdi       # Puts the PTR of the linked list in %rdi for pass
+    call sum_list
+
+.align 8 #Linked List
+ele1:
+    .quad 0x00a
+    .quad ele2
+ele2:
+    .quad 0x0b0
+    .quad ele3
+ele3:
+    .quad 0xc00
+    .quad 0
+
+sum_list:
+    pushq %rbp              # Settings up stack
+    rrmovq %rsp, %rbp        # Setting top of stack
+    rmmovq %rdi, -24(%rbp)   # Moving 'LS' into stack 16bytes
+    irmovq 0, %rax          # Settings %rax to 0
+    rmmovq %rax, -8(%rbp)    # Moving '0' into 'Val' 8bytes
+.L2:
+    irmovq 0, %rax
+    mrmovq -24(%rbp), %rbx
+    subq %rax, %rbx
+    je .L3                  # If 'LS' is Null Jump to .L3
+
+    mrmovq -24(%rbp), %rax   # puts 'LS' into %rax
+    mrmovq (%rax), %rax
+    mrmovq -8(%rbp), %rbx    # puts 'val' into %rbx
+    addq %rbx, %rax         # adds 'LS->val' to 'val'. 'LS->Val' is 1st, so no mem chng needed
+    rmmovq %rax, -8(%rbp)    # returns result into 'val'
+
+    mrmovq -24(%rbp), %rax   # stores location of 'LS' in %eax
+    mrmovq 8(%rax), %rax   # Increments to PTR 'next' in 'LS'
+    rmmovq %rax, -24(%rbp)   # sets address of 'LS' to 'NEXT'
+    jmp .L2
+.L3:
+    mrmovq -8(%rbp), %rax   # puts 'LS' int %eax for return
+    popq %rbp                # resets %rbp
+    ret
+
+.pos 400
+stack:

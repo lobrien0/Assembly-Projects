@@ -1,0 +1,68 @@
+#########################################################################
+#   Program Info:                                                       #
+#                                                                       #
+#       Author:     Luke O'Brien                                        #
+#       Updated:    3/11/2023                                           #
+#                                                                       #
+#       Description:                                                    #
+#           The following program is designed recursivly sum the data   #
+#           inside a linked list to a single number, then retunred      #
+#           in %rdi                                                     #
+#                                                                       #
+#########################################################################
+
+.pos 0
+irmovq stack, %rsp          # Sets %rsp to stack location
+rrmovq %rsp, %rbp           # sets %rbp to %rsp 
+call main
+halt
+
+main:
+    irmovq ele1, %rdi       # Puts the PTR of the linked list in %rdi for pass
+    call rsum_list
+
+.align 8 #Linked List
+ele1:
+    .quad 0x00a
+    .quad ele2
+ele2:
+    .quad 0x0b0
+    .quad ele3
+ele3:
+    .quad 0xc00
+    .quad 0
+
+rsum_list:
+    pushq %rbp              # Store location of %rbp (For memory use)
+    irmovq 24, %rax         # mov 24 into %rax
+    addq %rax, %rbp         # Incr %rbp by 24 giving us 3, 8byte locations
+
+    rrmovq %rdi, %rbx       # mov 'ls' value into $rbx
+    irmovq 0, %rax          # mov '0' into %rax
+    subq %rbx, %rax         # sub '0' from %rbx
+    je .L1                  # if 'ls' stored in $rbx is zero jump to .L1
+
+    rmmovq %rdi, -24(%rbp)  # mov 'ls' into MEM-1; 8Bytes
+    mrmovq -24(%rbp), %rax  # Load 'ls' PTR into %rax
+    mrmovq (%rax), %rax     # Get 'ls->val' and store in $rax
+    rmmovq %rax, -16(%rbp)  # mov 'ls->val' in %rax to MEM-2; 8Bytes
+
+    mrmovq -24(%rbp), %rdi  # load 'ls' into %rdi
+    mrmovq 8(%rdi), %rdi    # load 'ls->next' into %rdi
+    call rsum_list
+
+    rmmovq %rdi, -8(%rbp)   # mov 'rest' into MEM-3
+    mrmovq -8(%rbp), %rax   # load 'rest' into %rax
+    mrmovq -16(%rbp), %rbx  # load 'ls->val' into %rbx
+    addq %rbx, %rax         # add 'ls->val' and 'rest'
+    rrmovq %rax, %rdi       # mov result into %rdi (for return)
+    popq %rbp               # Reset %rbp to origin mem location
+    ret
+.L1:
+    irmovq 0, %rdi          # mov 0 into %rdi (for return)
+    popq %rbp               # Reset %rbp to origin mem location
+    ret
+
+
+.pos 800                    # Defining Stack Location
+stack:

@@ -1,0 +1,85 @@
+#########################################################################
+#   Program Info:                                                       #
+#                                                                       #
+#       Author:     Luke O'Brien                                        #
+#       Updated:    3/11/2023                                           #
+#                                                                       #
+#       Description:                                                    #
+#           The following program is designed to copy the data stored   #
+#           in an array, to a different location in memory              #
+#                                                                       #
+#########################################################################
+
+.pos 0
+irmovq stack, %rsp          # Sets %rsp to stack location
+rrmovq %rsp, %rbp           # sets %rbp to %rsp 
+call main
+halt
+
+main:
+    irmovq src, %rax
+    irmovq dest, %rbx
+    irmovq 3, %rcx
+    pushq %rcx
+    pushq %rbx
+    pushq %rax
+    call copy_block
+    halt
+
+.align 8
+src:
+    .quad 0x00a
+    .quad 0x0b0
+    .quad 0xc00
+
+dest: 
+    .quad 0x111
+    .quad 0x222
+    .quad 0x333
+
+copy_block:
+    popq %rdi               # Store call location in %rdi
+    popq %rax               # Store passed 'src' in %rax
+    popq %rbx               # Store passed 'dest' in %rbx
+    popq %rcx               # Store passed 'len' in $rcx
+    pushq %rdi              # Restore call location stored in $rdi
+
+    pushq %rbp              # Preserve %rbp
+    irmovq 24, %rdi         # store 32 in %rdi
+    addq %rdi, %rbp         # add 32 to the $rbp (For MEM Storage)
+    rmmovq %rax, -8(%rbp)   # store 'src' in MEM-1; 8Bytes
+    rmmovq %rbx, -16(%rbp)  # store 'dest' in MEM-2; 8Bytes
+    rmmovq %rcx, -24(%rbp)  # store 'len' in MEM-3; 8Bytes
+
+    mrmovq -8(%rbp), %rax   # load 'src' into %rax
+    mrmovq -16(%rbp), %rbx  # load 'dest' into %rbx
+    irmovq 0, %rdx          # store 0 in %rdx (result)
+
+.L1:
+    mrmovq -24(%rbp), %rdi  # load 'len' into %rdi
+    irmovq 0, %rcx          # store 0 in %rcx
+    subq %rdi, %rcx         # 0 - 'len'
+    jge .L2                 # if result of above is eq to 0 jump to .L2
+
+    mrmovq (%rax), %rdi     # load 'src'(MEM) into %rdi
+    rmmovq %rdi, (%rbx)     # store 'src' into 'dest'(MEM)
+    xorq %rdx, %rdi         # xor 'src' with 'result', store in %rdi
+    rrmovq %rdi, %rdx       # mov resulting xor (in %rdi) into 'result'
+
+    irmovq 8, %rdi          # store 8 in %rdi
+    addq %rdi, %rax         # increment 'src'(MEM) by 8 bytes
+    addq %rdi, %rbx         # increment 'dest'(MEM) by 8 bytes
+
+    irmovq -1, %rcx         # store -1 in %rcx
+    mrmovq -24(%rbp), %rdi  # load 'len' in %rdi
+    addq %rcx, %rdi         # subtract 1 from %rdi (len=len-1)
+    rmmovq %rdi, -24(%rbp)  # store new'len' back into memory
+    jmp .L1
+
+.L2:
+    rrmovq %rdx, %rdi       # move 'result' from %rdx to %rdi (for return)
+    popq %rbp               # Restore the %rbp
+    ret
+
+.pos 800
+stack:
